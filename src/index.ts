@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express"; //Express library imported
+import usersRouter from "./routes/users";
 
 const app = express(); // Use an instance of Express, for routing
 const PORT = 3000;
@@ -13,16 +14,7 @@ app.get("/ping", (req: Request, res: Response) => {
   res.json({ pong: true, time: new Date().toISOString() });
 });
 
-app.get("/users/:id", (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string);
-
-  if (isNaN(id)) {
-    res.status(400).json({ error: "Id must be a number" });
-    return;
-  }
-
-  res.json({ message: `Fetching user with id: ${id}` });
-});
+app.use("/users", usersRouter);
 
 app.get("/search", (req: Request, res: Response) => {
   const name = req.query.name; // $_GET['name']
