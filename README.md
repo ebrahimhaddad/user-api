@@ -38,7 +38,7 @@ src/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/user-api.git
+git clone https://github.com/ebrahimhaddad/user-api.git
 
 # Navigate to project folder
 cd user-api
