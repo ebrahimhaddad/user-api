@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:8.0 # Use the official MySQL 8.0 Docker image
+    container_name: user-api-mysql
+    restart: always
+    environment: # MySQL config — like editing my.cnf but cleaner
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: userapi
+      MYSQL_USER: apiuser
+      MYSQL_PASSWORD: apipassword
+    ports: # Map your machine's port 3306 to the container's port 3306
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes: # Persist data so it survives container restarts
+  mysql_data:

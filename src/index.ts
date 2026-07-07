@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express"; //Express library imported
 import usersRouter from "./routes/users";
+import pool from "./config/db";
 
 const app = express(); // Use an instance of Express, for routing
 const PORT = 3000;
@@ -22,6 +23,11 @@ app.get("/search", (req: Request, res: Response) => {
   res.json({ searching_for: { name, age } });
   console.log(req.headers); // getallheaders()
 });
+
+pool
+  .getConnection()
+  .then(() => console.log("MySQL connected successfully"))
+  .catch((err) => console.error("MySQL connection failed:", err));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
