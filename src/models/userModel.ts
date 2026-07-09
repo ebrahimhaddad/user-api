@@ -1,5 +1,6 @@
 import pool from "../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
+import bcrypt from "bcrypt";
 
 export interface User {
   id?: number;
@@ -26,9 +27,10 @@ export const getUserById = async (id: number): Promise<User | null> => {
 };
 
 export const createUser = async (user: User): Promise<number> => {
+  const hashedPassword = await bcrypt.hash(user.password, 10);
   const [result] = await pool.query<ResultSetHeader>(
     "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-    [user.name, user.email, user.password],
+    [user.name, user.email, hashedPassword],
   );
   return result.insertId;
 };

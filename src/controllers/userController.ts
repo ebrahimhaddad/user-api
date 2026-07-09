@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getAllUsers, getUserById } from "../models/userModel";
+import { getAllUsers, getUserById, createUser } from "../models/userModel";
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -29,6 +29,26 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
 
     res.json(user);
   } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const addUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      res.status(400).json({ error: "Name, email and password are required" });
+      return;
+    }
+
+    const id = await createUser({ name, email, password });
+    res.status(201).json({ message: "User created", id });
+  } catch (error: any) {
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Email already exists" });
+      return;
+    }
     res.status(500).json({ error: "Internal server error" });
   }
 };
