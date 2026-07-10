@@ -34,3 +34,22 @@ export const createUser = async (user: User): Promise<number> => {
   );
   return result.insertId;
 };
+
+export const updateUser = async (
+  id: number,
+  user: Partial<User>,
+): Promise<boolean> => {
+  const [result] = await pool.query<ResultSetHeader>(
+    "UPDATE users SET name = ?, email = ? WHERE id = ?",
+    [user.name, user.email, id],
+  );
+  return result.affectedRows > 0;
+};
+
+export const deleteUser = async (id: number): Promise<boolean> => {
+  const [result] = await pool.query<ResultSetHeader>(
+    "DELETE FROM users WHERE id = ?",
+    [id],
+  );
+  return result.affectedRows > 0;
+};

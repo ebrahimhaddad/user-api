@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
-import { getAllUsers, getUserById, createUser } from "../models/userModel";
+import {
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../models/userModel";
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -49,6 +55,68 @@ export const addUser = async (req: Request, res: Response): Promise<void> => {
       res.status(409).json({ error: "Email already exists" });
       return;
     }
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const editUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    //console.log("Body received:", req.body);
+    //console.log("ID received:", req.params.id);
+    const raw = req.params.id as string;
+    const id = parseInt(raw);
+
+    if (isNaN(id) || !/^\d+$/.test(raw)) {
+      res.status(400).json({ error: "Id must be a positive integer" });
+      return;
+    }
+
+    const { name, email } = req.body;
+
+    if (!name || !email) {
+      res.status(400).json({ error: "Name and email are required" });
+      return;
+    }
+
+    const updated = await updateUser(id, { name, email });
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({ message: "User updated successfully" });
+  } catch (error: any) {
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(409).json({ error: "Email already exists" });
+      return;
+    }
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const removeUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const raw = req.params.id as string;
+    const id = parseInt(raw);
+
+    if (isNaN(id) || !/^\d+$/.test(raw)) {
+      res.status(400).json({ error: "Id must be a positive integer" });
+      return;
+    }
+
+    const deleted = await deleteUser(id);
+
+    if (!deleted) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
 };
