@@ -1,11 +1,14 @@
 import express, { Request, Response } from "express"; //Express library imported
 import usersRouter from "./routes/users";
 import pool from "./config/db";
+import authRouter from "./routes/auth";
 
 const app = express(); // Use an instance of Express, for routing
 const PORT = 3000;
 
 app.use(express.json()); // A middleware, run before each request to be routed
+
+app.use("/auth", authRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({ message: "User API is alive now!" });

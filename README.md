@@ -73,8 +73,8 @@ Server will start on `http://localhost:3000`
 - [x] Project setup with TypeScript
 - [x] Express server and routing
 - [x] MVC folder structure
-- [ ] MySQL database integration with Docker
-- [ ] User CRUD operations
+- [x] MySQL database integration with Docker
+- [x] User CRUD operations
 - [ ] Authentication with JWT
 - [ ] Input validation with Zod
 - [ ] Unit and integration tests
