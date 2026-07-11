@@ -75,7 +75,7 @@ Server will start on `http://localhost:3000`
 - [x] MVC folder structure
 - [x] MySQL database integration with Docker
 - [x] User CRUD operations
-- [ ] Authentication with JWT
+- [x] Authentication with JWT
 - [ ] Input validation with Zod
 - [ ] Unit and integration tests
 - [ ] Deployment to cloud
