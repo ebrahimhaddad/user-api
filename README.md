@@ -76,7 +76,7 @@ Server will start on `http://localhost:3000`
 - [x] MySQL database integration with Docker
 - [x] User CRUD operations
 - [x] Authentication with JWT
-- [ ] Input validation with Zod
+- [x] Input validation with Zod
 - [ ] Unit and integration tests
 - [ ] Deployment to cloud
 
