@@ -43,10 +43,11 @@ export const addUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password } = req.body;
 
+    /* Removed because of Validate by Zod
     if (!name || !email || !password) {
       res.status(400).json({ error: "Name, email and password are required" });
       return;
-    }
+    }*/
 
     const id = await createUser({ name, email, password });
     res.status(201).json({ message: "User created", id });
