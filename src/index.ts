@@ -1,10 +1,25 @@
+import dotenv from "dotenv";
+dotenv.config({ quiet: true });
+import helmet from "helmet";
+import cors from "cors";
 import express, { Request, Response } from "express"; //Express library imported
 import usersRouter from "./routes/users";
 import pool from "./config/db";
 import authRouter from "./routes/auth";
+import { generalLimiter } from "./middleware/rateLimiter";
 
 const app = express(); // Use an instance of Express, for routing
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+app.use(helmet());
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGIN || "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+app.use(generalLimiter);
 
 app.use(express.json()); // A middleware, run before each request to be routed
 
