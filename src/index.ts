@@ -10,8 +10,8 @@ import { generalLimiter } from "./middleware/rateLimiter";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express(); // Use an instance of Express, for routing
-const PORT = process.env.PORT || 3000;
 
+// Security middleware
 app.use(helmet());
 app.use(
   cors({
@@ -44,11 +44,4 @@ app.get("/search", (req: Request, res: Response) => {
 });
 app.use(errorHandler); // must be last
 
-pool
-  .getConnection()
-  .then(() => console.log("MySQL connected successfully"))
-  .catch((err) => console.error("MySQL connection failed:", err));
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-}); // Strarts a server, starts listening
+export default app; // export app without starting it
