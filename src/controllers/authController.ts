@@ -1,10 +1,14 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../config/db";
 import { RowDataPacket } from "mysql2";
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -43,6 +47,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.json({ message: "Login successful", token });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
+    //res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import {
   getAllUsers,
   getUserById,
@@ -6,17 +6,26 @@ import {
   updateUser,
   deleteUser,
 } from "../models/userModel";
+import { AuthRequest } from "../middleware/authenticate";
 
-export const getUsers = async (req: Request, res: Response): Promise<void> => {
+export const getUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const users = await getAllUsers(); // Our model functions hit the database which takes time. We need to await them — otherwise we'd return a response before the data arrives
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error); // ← just pass to error handler
   }
 };
 
-export const getUser = async (req: Request, res: Response): Promise<void> => {
+export const getUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const raw = req.params.id as string;
     const id = parseInt(raw);
@@ -35,32 +44,30 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
-export const addUser = async (req: Request, res: Response): Promise<void> => {
+export const addUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { name, email, password } = req.body;
 
-    /* Removed because of Validate by Zod
-    if (!name || !email || !password) {
-      res.status(400).json({ error: "Name, email and password are required" });
-      return;
-    }*/
-
     const id = await createUser({ name, email, password });
     res.status(201).json({ message: "User created", id });
-  } catch (error: any) {
-    if (error.code === "ER_DUP_ENTRY") {
-      res.status(409).json({ error: "Email already exists" });
-      return;
-    }
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error) {
+    next(error); // ER_DUP_ENTRY handled in errorHandler now
   }
 };
 
-export const editUser = async (req: Request, res: Response): Promise<void> => {
+export const editUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     //console.log("Body received:", req.body);
     //console.log("ID received:", req.params.id);
@@ -87,18 +94,15 @@ export const editUser = async (req: Request, res: Response): Promise<void> => {
     }
 
     res.json({ message: "User updated successfully" });
-  } catch (error: any) {
-    if (error.code === "ER_DUP_ENTRY") {
-      res.status(409).json({ error: "Email already exists" });
-      return;
-    }
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error) {
+    next(error);
   }
 };
 
 export const removeUser = async (
   req: Request,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const raw = req.params.id as string;
@@ -118,6 +122,6 @@ export const removeUser = async (
 
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };

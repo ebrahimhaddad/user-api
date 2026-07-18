@@ -7,6 +7,7 @@ import usersRouter from "./routes/users";
 import pool from "./config/db";
 import authRouter from "./routes/auth";
 import { generalLimiter } from "./middleware/rateLimiter";
+import { errorHandler } from "./middleware/errorHandler";
 
 const app = express(); // Use an instance of Express, for routing
 const PORT = process.env.PORT || 3000;
@@ -41,6 +42,7 @@ app.get("/search", (req: Request, res: Response) => {
   res.json({ searching_for: { name, age } });
   console.log(req.headers); // getallheaders()
 });
+app.use(errorHandler); // must be last
 
 pool
   .getConnection()
