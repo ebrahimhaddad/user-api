@@ -42,6 +42,12 @@ app.get("/search", (req: Request, res: Response) => {
   res.json({ searching_for: { name, age } });
   console.log(req.headers); // getallheaders()
 });
+app.get("/route-check", (req: Request, res: Response) => {
+  res.json({
+    message: "Route check",
+    timestamp: new Date().toISOString(),
+  });
+});
 app.use(errorHandler); // must be last
 
 export default app; // export app without starting it
