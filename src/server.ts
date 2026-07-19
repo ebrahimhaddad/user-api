@@ -1,5 +1,6 @@
 import app from "./index";
 import pool from "./config/db";
+import logger from "./utils/logger";
 
 const PORT = process.env.PORT || 3000;
 
@@ -9,5 +10,5 @@ pool
   .catch((err) => console.error("MySQL connection failed:", err));
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  logger.info(`Server running on http://localhost:${PORT}`);
 });
