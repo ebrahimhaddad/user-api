@@ -12,6 +12,7 @@ import logger from "./utils/logger";
 
 const app = express(); // Use an instance of Express, for routing
 app.set("trust proxy", 1);
+console.log("trust proxy setting:", app.get("trust proxy"));
 
 // Security middleware
 app.use(helmet());
