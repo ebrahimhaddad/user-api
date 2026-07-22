@@ -12,6 +12,7 @@ import logger from "./utils/logger";
 
 const app = express(); // Use an instance of Express, for routing
 app.set("trust proxy", 1);
+console.log("trust proxy setting:", app.get("trust proxy"));
 
 // Security middleware
 app.use(helmet());
@@ -31,6 +32,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use("/auth", authRouter);
+
 app.get("/", (req: Request, res: Response) => {
   res.json({ message: "User API is alive now!" });
 }); // Router: receives two objects. req for headers, body, params, query string. res for tools to send a response
@@ -40,8 +43,6 @@ app.get("/ping", (req: Request, res: Response) => {
 });
 
 app.use("/users", usersRouter);
-
-app.use("/auth", authRouter);
 
 app.get("/search", (req: Request, res: Response) => {
   const name = req.query.name; // $_GET['name']
