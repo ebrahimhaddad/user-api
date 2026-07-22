@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/AppError";
 import { ZodError } from "zod";
 import logger from "../utils/logger";
+import rateLimit from "express-rate-limit";
 
 export const errorHandler = (
   err: Error,
@@ -45,3 +46,21 @@ export const errorHandler = (
         : err.message,
   }); // In development you see the real error message — helpful for debugging. In production you hide it. Put NODE_ENV=development to .env
 };
+
+export const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: "Too many requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false }, // ← add this
+});
+
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many login attempts, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false }, // ← add this
+});
