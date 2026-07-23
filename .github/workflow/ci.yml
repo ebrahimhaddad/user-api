@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:9.4
+        env:
+          MYSQL_ROOT_PASSWORD: apipassword
+          MYSQL_DATABASE: userapi
+          MYSQL_USER: apiuser
+          MYSQL_PASSWORD: apipassword
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot && break
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+
+      - name: Run DB migrations / schema setup
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot user_api_test < ./db/schema.sql
+        # ^ update this path to wherever your table-creation SQL lives.
+        # If you don't have a schema.sql yet, see note below.
+
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: apiuser
+          DB_PASSWORD: apipassword
+          DB_NAME: userapi
+          JWT_SECRET: test_ci_secret_key
