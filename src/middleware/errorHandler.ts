@@ -31,7 +31,11 @@ export const errorHandler = (
   }
 
   // MySQL duplicate entry
-  if ((err as any).code === "ER_DUP_ENTRY") {
+  interface MySQLError extends Error {
+    code?: string;
+  }
+
+  if ((err as MySQLError).code === "ER_DUP_ENTRY") {
     res.status(409).json({
       error: "A record with this value already exists",
     });

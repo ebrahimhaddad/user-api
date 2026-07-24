@@ -6,8 +6,6 @@ import {
   updateUser,
   deleteUser,
 } from "../models/userModel";
-import { AuthRequest } from "../middleware/authenticate";
-
 export const getUsers = async (
   req: Request,
   res: Response,

@@ -4,7 +4,6 @@ import helmet from "helmet";
 import cors from "cors";
 import express, { Request, Response } from "express"; //Express library imported
 import usersRouter from "./routes/users";
-import pool from "./config/db";
 import authRouter from "./routes/auth";
 import { generalLimiter } from "./middleware/rateLimiter";
 import { errorHandler } from "./middleware/errorHandler";
