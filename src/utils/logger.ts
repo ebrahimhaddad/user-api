@@ -1,4 +1,5 @@
 import winston from "winston";
+
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === "production" ? "info" : "debug",
   format: winston.format.combine(
@@ -11,4 +12,10 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: "logs/combined.log" }),
   ],
 });
+
+// morgan writes HTTP access logs through this stream, into Winston
+export const httpLogStream = {
+  write: (message: string) => logger.http(message.trim()),
+};
+
 export default logger;

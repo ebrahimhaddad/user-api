@@ -9,6 +9,8 @@ import { generalLimiter } from "./middleware/rateLimiter";
 import { errorHandler } from "./middleware/errorHandler";
 import logger from "./utils/logger";
 import healthRoutes from "./routes/health";
+import morgan from "morgan";
+import { httpLogStream } from "./utils/logger";
 
 const app = express(); // Use an instance of Express, for routing
 app.set("trust proxy", 1);
@@ -25,6 +27,13 @@ app.use(
 );
 app.use(healthRoutes);
 app.use(generalLimiter);
+app.use(
+  morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {
+    stream: httpLogStream,
+    skip: (req) => req.path === "/health",
+  }),
+);
+
 app.use(express.json()); // A middleware, run before each request to be routed
 
 app.use((req, res, next) => {
