@@ -8,6 +8,7 @@ import authRouter from "./routes/auth";
 import { generalLimiter } from "./middleware/rateLimiter";
 import { errorHandler } from "./middleware/errorHandler";
 import logger from "./utils/logger";
+import healthRoutes from "./routes/health";
 
 const app = express(); // Use an instance of Express, for routing
 app.set("trust proxy", 1);
@@ -22,8 +23,8 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+app.use(healthRoutes);
 app.use(generalLimiter);
-
 app.use(express.json()); // A middleware, run before each request to be routed
 
 app.use((req, res, next) => {
