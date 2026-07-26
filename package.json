@@ -43,6 +43,7 @@
     "typescript-eslint": "^8.65.0"
   },
   "dependencies": {
+    "@sentry/node": "^10.68.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

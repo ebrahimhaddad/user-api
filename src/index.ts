@@ -1,3 +1,4 @@
+import "./instrument"; // must be first — before express, before everything
 import dotenv from "dotenv";
 dotenv.config({ quiet: true });
 import helmet from "helmet";
@@ -11,6 +12,7 @@ import logger from "./utils/logger";
 import healthRoutes from "./routes/health";
 import morgan from "morgan";
 import { httpLogStream } from "./utils/logger";
+import * as Sentry from "@sentry/node";
 
 const app = express(); // Use an instance of Express, for routing
 app.set("trust proxy", 1);
@@ -59,6 +61,7 @@ app.get("/search", (req: Request, res: Response) => {
   res.json({ searching_for: { name, age } });
   console.log(req.headers); // getallheaders()
 });
+Sentry.setupExpressErrorHandler(app); // catches errors, forwards to Sentry
 
 app.use(errorHandler); // must be last
 
