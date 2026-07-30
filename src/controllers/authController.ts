@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../config/db";
 import { RowDataPacket } from "mysql2";
+import redis from "../config/redis";
+import { AuthRequest, hashToken } from "../middleware/authenticate";
 
 export const login = async (
   req: Request,
@@ -49,5 +51,46 @@ export const login = async (
   } catch (error) {
     next(error);
     //res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const logout = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const token = req.token; // set by the authenticate middleware
+    if (!token) {
+      res.status(400).json({ error: "No token to revoke" });
+      return;
+    }
+
+    // Decode (not verify again — authenticate middleware already verified it)
+    // just to read the expiry so we know how long to keep the blocklist entry.
+    const decoded = jwt.decode(token) as { exp?: number } | null;
+
+    if (!decoded?.exp) {
+      res.status(400).json({ error: "Token has no expiry to calculate" });
+      return;
+    }
+
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    const remainingSeconds = decoded.exp - nowInSeconds;
+
+    if (remainingSeconds > 0) {
+      // Blocklist entry expires exactly when the token itself would have
+      // expired anyway — no point keeping it in Redis any longer than that.
+      await redis.set(
+        `blocklist:${hashToken(token)}`,
+        "1",
+        "EX",
+        remainingSeconds,
+      );
+    }
+
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    next(error);
   }
 };
