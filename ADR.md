@@ -146,9 +146,11 @@ Use JSON Web Tokens (JWT) for stateless authentication.
 
 ### Consequences
 
-- Tokens cannot be invalidated before expiry (use short expiry + refresh tokens in future)
 - Token stored on client — client responsible for security
 - Secret key must be kept secure — stored in `.env`, never in Git
+- ~~Tokens cannot be invalidated before expiry~~ — superseded by ADR-011: a Redis-backed
+  blocklist now allows explicit revocation (logout) before natural expiry, while keeping
+  the base auth model stateless and JWT-based
 
 ---
 
@@ -263,6 +265,9 @@ Use Winston for structured logging.
 
 - `logs/` directory added to `.gitignore`
 - Log level set to `debug` in development, `info` in production via `NODE_ENV`
+- `morgan` HTTP request logging is piped through a Winston stream (`logger.http`), so
+  access logs and application logs share one unified pipeline and output format
+  (see ADR-011 context on observability additions)
 
 ---
 
@@ -291,3 +296,111 @@ Use Railway as the initial cloud deployment platform.
 - `PORT` must be read from environment variables — Railway assigns it dynamically
 - `trust proxy` required — Railway sits behind a reverse proxy
 - Rate limiter `validate: { xForwardedForHeader: false }` required for Railway compatibility
+
+---
+
+## ADR-011: Redis for Caching and JWT Token Revocation
+
+**Date:** 2026-07  
+**Status:** Accepted
+
+### Context
+
+Two separate gaps existed in the production setup:
+
+1. `GET /users` and `GET /users/:id` hit MySQL on every request, even for identical,
+   frequently-repeated reads.
+2. JWTs are stateless by design (ADR-005) — once issued, a token remains valid until
+   natural expiry even after "logout." There was no way to revoke a token early.
+
+Both problems share the same solution shape: a fast, ephemeral, key-value store that
+sits in front of or alongside MySQL without replacing it.
+
+### Decision
+
+Introduce Redis as a supporting data store for two distinct purposes:
+
+- **Query caching** — cache-aside pattern on `GET /users` and `GET /users/:id`, 60-second
+  TTL, explicit invalidation on create/update/delete.
+- **Token revocation** — a `POST /auth/logout` endpoint blocklists the current token's
+  hash in Redis, with a TTL matching the token's own remaining lifetime. The
+  `authenticate` middleware checks this blocklist on every request, in addition to
+  verifying the JWT signature as before.
+
+Full session-based authentication (storing session state in Redis in place of JWT) was
+considered and explicitly rejected — it would replace the stateless auth model from
+ADR-005 rather than complement it, and JWT remains the primary auth mechanism.
+
+### Reasons
+
+- Redis is purpose-built for this: sub-millisecond reads, native TTL/expiry support,
+  simple key-value operations — no need for a general-purpose DB for either use case.
+- Cache-aside is simple to reason about and safe by default: on any doubt, invalidate
+  rather than try to keep the cache in sync in place.
+- TTL-bound blocklist entries self-clean — no cron job or manual cleanup needed, and no
+  risk of the blocklist growing unbounded over time.
+- Hashing tokens (`sha256`) before using them as Redis keys avoids storing raw JWTs as
+  plaintext keys.
+- Running locally via Docker (`docker-compose.yml`) matches the existing MySQL pattern
+  from ADR-004 — one command brings up the full local stack.
+
+### Consequences
+
+- A new local dependency: Redis must be running (via `docker compose up`) for caching
+  and logout to function in development.
+- `authenticate` middleware is now `async`, since it performs a Redis lookup on every
+  authenticated request.
+- Cached list/detail data can be up to 60 seconds stale in the worst case (TTL window)
+  if an invalidation path is ever missed — acceptable for this project's scale, but
+  worth revisiting if stronger consistency is ever required.
+- Redis will need its own managed instance and authentication (`requirepass` / a
+  managed Redis add-on) once deployed to Railway — local Docker Redis currently runs
+  without a password, which is fine locally but not acceptable in production.
+
+---
+
+## ADR-012: Defer ORM Adoption (Prisma) — Continue with Raw mysql2
+
+**Date:** 2026-08-01  
+**Status:** Accepted
+
+### Context
+
+The project currently uses the `mysql2` driver directly, with hand-written SQL in the
+model layer (`src/models/`). Prisma was considered as a potential replacement, given its
+popularity in the current Node.js/TypeScript ecosystem and its promise of auto-generated
+types and simpler migrations.
+
+The developer has prior experience with Laravel's Eloquent ORM from PHP work, so the ORM
+concept itself is not new — the question was whether introducing one here specifically
+adds value, not whether ORMs in general are worth learning.
+
+### Decision
+
+Do not migrate to Prisma (or any ORM) for this project at this time. Continue with raw
+`mysql2` and hand-written SQL.
+
+### Reasons
+
+- The project's actual query patterns are simple CRUD against a single `users` table —
+  no joins, no complex aggregations, no deep relational queries. An ORM's main value
+  (simplifying complex query construction) doesn't apply here.
+- Raw SQL keeps the existing MySQL expertise (ADR-004) directly applicable and visible —
+  a relevant strength to demonstrate, not something to abstract away.
+- Introducing Prisma now would mean a new query syntax, a new migration system, and a new
+  tool in the CI pipeline (ADR-011's schema.sql approach would need rethinking), for a
+  problem the project doesn't currently have.
+- Familiarity with ORM concepts (via Eloquent) is already established; adding Prisma
+  specifically is a tool-syntax exercise more than a new architectural skill at this
+  project's current complexity.
+
+### Consequences
+
+- Continued manual type-keeping between `RowDataPacket` shapes and actual table schema —
+  accepted as a reasonable cost given the schema's current simplicity.
+- If the project later grows to need joins across multiple tables, reporting-style
+  queries, or a second related entity beyond `users`, this decision should be revisited —
+  that's the point at which an ORM's value proposition would actually apply.
+- This decision is scoped to _this_ project; it is not a statement that Prisma/ORMs are
+  not worth learning in general — that remains a separate, standalone learning topic for
+  Phase 5 or beyond.
