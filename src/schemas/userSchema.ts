@@ -18,8 +18,13 @@ export const updateUserSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.email("Invalid email format"),
-  password: z.string().min(1, "Password is required"),
+  email: z
+    .email("Invalid email format")
+    .openapi({ example: "jane@example.com" }),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .openapi({ example: "secret123" }),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

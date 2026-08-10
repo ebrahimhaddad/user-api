@@ -1,6 +1,7 @@
 import "./instrument"; // must be first — before express, before everything
 import dotenv from "dotenv";
 dotenv.config({ quiet: true });
+import "./config/zodExtend";
 import helmet from "helmet";
 import cors from "cors";
 import express, { Request, Response } from "express"; //Express library imported
@@ -13,6 +14,8 @@ import healthRoutes from "./routes/health";
 import morgan from "morgan";
 import { httpLogStream } from "./utils/logger";
 import * as Sentry from "@sentry/node";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 
 const app = express(); // Use an instance of Express, for routing
 app.set("trust proxy", 1);
@@ -52,6 +55,8 @@ app.get("/", (req: Request, res: Response) => {
 app.get("/ping", (req: Request, res: Response) => {
   res.json({ pong: true, time: new Date().toISOString() });
 });
+
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/users", usersRouter);
 
