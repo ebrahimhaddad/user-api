@@ -404,3 +404,99 @@ Do not migrate to Prisma (or any ORM) for this project at this time. Continue wi
 - This decision is scoped to _this_ project; it is not a statement that Prisma/ORMs are
   not worth learning in general — that remains a separate, standalone learning topic for
   Phase 5 or beyond.
+
+---
+
+## ADR-013: Migrate Deployment from Railway to Self-Managed AWS EC2
+
+**Date:** 2026-08  
+**Status:** Accepted
+
+### Context
+
+Railway's trial period was ending, requiring either a paid plan or a migration to a
+different platform (ADR-010 anticipated this: "concepts transfer directly to AWS for
+future production deployments"). Two real constraints shaped the decision beyond simple
+cost comparison:
+
+- The developer is based in Iran. Iran-issued cards cannot be charged by most Western
+  payment processors, and AWS explicitly does not serve customers located in Iran under
+  U.S. export control law (OFAC sanctions), a stricter and more binding restriction than
+  ordinary payment friction. This risk was identified and accepted knowingly (see
+  Consequences), not overlooked.
+- The job search specifically targets international remote roles, where "AWS" as a named
+  keyword carries real, measurable recognition value with recruiters and ATS systems that
+  a less-known provider (Railway, Hetzner, Oracle Cloud) does not carry to the same degree.
+
+A German-jurisdiction alternative (Hetzner) was seriously considered, since it avoids the
+sanctions restriction entirely and aligns with the developer's long-term relocation goal.
+AWS was ultimately chosen deliberately, accepting the account-suspension risk as a bounded,
+low-consequence downside (minimal spend to date, Hetzner remains a ready fallback) in
+exchange for the stronger keyword/portfolio value of genuine, hands-on AWS experience
+during an active job search.
+
+### Decision
+
+Migrate `user-api`'s production deployment from Railway (managed PaaS) to a self-managed
+AWS EC2 instance, replacing Railway's managed build/deploy/proxy layer with:
+
+- **EC2** (t3.micro, free-tier eligible, eu-west-1) as the compute host
+- **Docker Compose** orchestrating the app, MySQL, and Redis containers together on one
+  instance, with a MySQL healthcheck gating the app's startup (`condition:
+service_healthy`) to avoid a connection race on boot
+- **nginx**, installed directly on the host (not containerized), as a reverse proxy in
+  front of the app container
+- **Certbot / Let's Encrypt** for a real TLS certificate on the origin server itself
+- **Cloudflare**, unchanged from the Railway setup, still sitting in front as a proxy in
+  Full (strict) mode, now validating against the new Let's Encrypt certificate on EC2
+  instead of Railway's
+
+An Elastic IP was allocated and attached to the instance specifically so the server's
+public address stays stable across any future stop/restart, since DNS now points directly
+at it.
+
+### Reasons
+
+- Managed PaaS (Railway) abstracts away exactly the skills this migration was meant to
+  build and demonstrate: server provisioning, container orchestration, reverse proxy
+  configuration, and certificate management. Doing this by hand is more defensible in a
+  technical interview than "I clicked deploy."
+- AWS's free tier (new account structure as of mid-2025: $200 credit, 6-month window)
+  comfortably covers a low-traffic single-instance deployment for the duration of an
+  active job search.
+- Running app + MySQL + Redis together via Docker Compose on one instance mirrors the
+  local development setup (ADR-004, ADR-011) closely enough that the same mental model
+  applies in both environments, easing the transition.
+- Keeping Cloudflare in front, unchanged, meant only the origin needed to change, DNS,
+  SSL strategy, and edge protection stayed consistent with the existing setup rather than
+  being redesigned from scratch.
+
+### Consequences
+
+- **Real operational risk accepted knowingly:** the AWS account could be suspended at any
+  time under sanctions enforcement, regardless of billing address or payment method used,
+  since enforcement is tied to access location. Mitigation in place: consistent access via
+  a Germany-located VPN and phone verification across every AWS touchpoint, to avoid
+  location-signal mismatches that trigger review. Hetzner remains a known, ready fallback
+  if the account is ever suspended.
+- **Meaningfully more operational surface area than Railway:** the developer is now
+  responsible for OS patching, Docker daemon health, nginx configuration, certificate
+  renewal (Certbot auto-renews via a systemd timer, but this is now a real dependency to
+  monitor rather than Railway's managed concern), and security group / firewall rules,
+  none of which existed as manual concerns under Railway.
+- **A genuine entry-point bug was caught during this migration**, worth recording as a
+  concrete lesson: the production Dockerfile initially pointed at `dist/index.js` (the
+  app-factory module that deliberately does not call `app.listen()`, by design, see
+  `src/index.ts`'s `export default app` pattern, meant for test imports) instead of
+  `dist/server.js` (the real entry point with `app.listen()` and graceful shutdown
+  handling). This produced a process that started cleanly, connected to Redis
+  successfully, and never crashed, but never bound to a port, so every request reset the
+  connection. Not caught by CI (tests import `app` directly via supertest and never
+  needed a real listening port) or by a shallow health check (nothing was listening to
+  even respond). Diagnosed by comparing `ps aux` and `ss -tlnp` output inside the running
+  container against expected behavior. Underscores that "the process is running and
+  hasn't crashed" is not sufficient evidence that a service is actually serving traffic,
+  worth an actual request-response check, not just a process/container status check, when
+  verifying a deployment.
+- Railway remains temporarily active as a fallback during the transition and will be
+  decommissioned once the AWS deployment has proven stable over a longer period.
