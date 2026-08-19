@@ -31,6 +31,7 @@ app.use(
   }),
 );
 app.use(healthRoutes);
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(generalLimiter);
 app.use(
   morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {
