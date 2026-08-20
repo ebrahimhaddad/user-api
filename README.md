@@ -3,6 +3,7 @@
 A production-grade RESTful API built with Node.js, Express, and TypeScript, developed as part of a structured backend modernization journey from 15+ years of PHP/MySQL work into the Node.js/TypeScript ecosystem.
 
 **Live API:** [https://api.webtechie.ir](https://api.webtechie.ir)
+**Interactive API docs (Swagger/OpenAPI):** [https://api.webtechie.ir/docs](https://api.webtechie.ir/docs)
 **Architecture decisions:** [ADR.md](./ADR.md), every major design decision documented with context, reasoning, and trade-offs
 
 ---
@@ -16,6 +17,7 @@ A production-grade RESTful API built with Node.js, Express, and TypeScript, deve
 - **Cache / Token revocation:** Redis
 - **Auth:** JWT (with Redis-backed logout/revocation)
 - **Validation:** Zod
+- **API documentation:** OpenAPI/Swagger, generated from Zod schemas (zod-to-openapi)
 - **Security:** Helmet, CORS, express-rate-limit
 - **Logging:** Winston + morgan
 - **Error tracking:** Sentry
@@ -56,9 +58,9 @@ src/
 ```
 
 **Note:** `index.ts` builds and exports the Express app but deliberately does not call
-`app.listen()` - this keeps the app importable/testable in isolation (Supertest imports
+`app.listen()`, this keeps the app importable/testable in isolation (Supertest imports
 `app` directly). `server.ts` is the actual runtime entry point. Running `node dist/index.js`
-directly will start cleanly but never bind to a port - always run `server.ts` in production.
+directly will start cleanly but never bind to a port, always run `server.ts` in production.
 
 ---
 
@@ -102,6 +104,7 @@ npm test
 | GET    | `/`            | No            | Liveness check                                |
 | GET    | `/ping`        | No            | Returns server time                           |
 | GET    | `/health`      | No            | Health check, including DB connectivity       |
+| GET    | `/docs`        | No            | Interactive Swagger/OpenAPI documentation     |
 | POST   | `/auth/login`  | No            | Authenticate, returns a JWT                   |
 | POST   | `/auth/logout` | Yes           | Revokes the current token via Redis blocklist |
 | GET    | `/users`       | Yes           | List users (cached)                           |
@@ -138,8 +141,8 @@ for the full reasoning behind this setup, including the trade-offs considered.
 - [x] Redis caching and JWT revocation
 - [x] Error tracking (Sentry) and uptime monitoring
 - [x] Production deployment with custom domain and HTTPS
-- [ ] OpenAPI/Swagger documentation
-- [ ] API versioning (currently deferred, see ADR log)
+- [x] OpenAPI/Swagger documentation, generated from Zod schemas
+- [ ] API versioning (currently deferred — see ADR log)
 
 ---
 
@@ -147,7 +150,7 @@ for the full reasoning behind this setup, including the trade-offs considered.
 
 Backend developer with 20+ years of hands-on technology experience and 15+ years of
 production PHP/MySQL work, now specializing in Node.js/TypeScript. This project is the
-primary portfolio piece for that transition, see the [ADR log](./ADR.md) for the full
+primary portfolio piece for that transition — see the [ADR log](./ADR.md) for the full
 decision history behind it.
 
 ---
