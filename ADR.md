@@ -500,3 +500,66 @@ at it.
   verifying a deployment.
 - Railway remains temporarily active as a fallback during the transition and will be
   decommissioned once the AWS deployment has proven stable over a longer period.
+
+---
+
+## ADR-014: OpenAPI/Swagger Documentation Instead of a Demo Frontend
+
+**Date:** 2026-08  
+**Status:** Accepted
+
+### Context
+
+The project needed some way for someone unfamiliar with the codebase, a recruiter, a
+technical interviewer, or the developer's future self, to explore the API's actual
+behavior without reading source code or manually crafting requests in Thunder Client.
+
+Two genuinely different approaches were considered:
+
+1. **Build a small demo frontend** - a lightweight UI (static HTML or a minimal React app)
+   that calls the API and renders results, giving anyone a clickable "product" to try.
+2. **Generate interactive API documentation** - OpenAPI/Swagger, letting anyone inspect
+   every endpoint's shape and fire real requests directly against the API from a
+   browser, with no separate application to build or host.
+
+### Decision
+
+Use OpenAPI/Swagger (via `zod-to-openapi`, generating the spec directly from the
+project's existing Zod validation schemas, served through `swagger-ui-express` at
+`/docs`) rather than building a demo frontend.
+
+### Reasons
+
+- This project's explicit purpose is to demonstrate backend engineering depth, API
+  design, auth, caching, deployment, observability. A demo frontend would introduce a
+  second, unrelated skill area (UI/state management) into a project meant to showcase a
+  specific, focused set of strengths, diluting rather than sharpening what's actually
+  being evaluated.
+- A frontend would add real scope: a separate app to design, build, host, and keep in
+  sync with the API, plus the CORS and deployment complexity of two independently
+  running applications. None of that effort would demonstrate anything the API itself
+  doesn't already prove on its own.
+- Interactive, standards-based API documentation is itself a recognized professional
+  backend practice. Building and maintaining a Swagger/OpenAPI setup is a real,
+  transferable skill that a hiring backend team is more likely to directly value than a
+  bespoke demo UI would be.
+- Generating the spec from the project's existing Zod schemas (rather than hand-writing
+  documentation separately, the original `swagger-jsdoc` approach that was tried and
+  abandoned) means the docs and the actual validation logic share one source of truth,
+  they cannot silently drift apart the way hand-written docs or a hand-built frontend's
+  assumptions could.
+- Anyone evaluating the project can self-serve directly: open `/docs`, authenticate, try
+  real endpoints, see real responses, without depending on a second application staying
+  up, staying bug-free, or staying in sync with API changes.
+
+### Consequences
+
+- There is no polished, consumer-facing visual demo for someone skimming without
+  technical context, Swagger UI is a developer-facing tool, not a "look how nice this
+  looks" product screen. Accepted deliberately, since the target audience for this
+  project (technical recruiters, engineers, interviewers) is exactly the audience Swagger
+  UI is built for.
+- Nothing about this decision precludes adding a lightweight demo frontend later if a
+  concrete need for one arises (e.g., a non-technical stakeholder needing to see the API
+  in action). The two approaches aren't mutually exclusive, just sequenced by priority,
+  and Swagger/OpenAPI was the higher-value use of limited time right now.
