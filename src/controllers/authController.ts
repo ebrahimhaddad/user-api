@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import pool from "../config/db";
 import { RowDataPacket } from "mysql2";
 import redis from "../config/redis";
@@ -44,7 +44,10 @@ export const login = async (
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET as string,
-      { expiresIn: "24h" },
+      {
+        expiresIn: (process.env.JWT_EXPIRES_IN ||
+          "24h") as SignOptions["expiresIn"],
+      },
     );
 
     res.json({ message: "Login successful", token });
