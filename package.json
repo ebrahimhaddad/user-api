@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch"
