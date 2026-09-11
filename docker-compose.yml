@@ -1,28 +1,41 @@
 services:
+  app:
+    build: .
+    container_name: user-api-app
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:3000:3000" # only reachable from the server itself — nginx will proxy to it
+    depends_on:
+      - mysql
+      - redis
+
   mysql:
-    image: mysql:8.0 # Use the official MySQL 8.0 Docker image
+    image: mysql:8.0
     container_name: user-api-mysql
     restart: always
-    environment: # MySQL config — like editing my.cnf but cleaner
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: userapi
-      MYSQL_USER: apiuser
-      MYSQL_PASSWORD: apipassword
-    ports: # Map your machine's port 3306 to the container's port 3306
-      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "127.0.0.1:3306:3306" # not exposed publicly — only reachable from the server itself
     volumes:
       - mysql_data:/var/lib/mysql
-    command: --innodb-buffer-pool-size=128M
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql # auto-runs on first startup only
 
   redis:
-    image: redis:8-alpine # Lightweight official Redis image
+    image: redis:8-alpine
     container_name: user-api-redis
     restart: always
-    ports: # Map your machine's port 6379 to the container's port 6379
-      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379" # not exposed publicly
     volumes:
       - redis_data:/data
 
-volumes: # Persist data so it survives container restarts
+volumes:
   mysql_data:
   redis_data:
